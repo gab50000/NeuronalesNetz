@@ -1,33 +1,46 @@
 #!/usr/bin/python
 import math,random
 
-class neuro2layer:
-	def __init__(self, inputlayer, hiddenlayer, outputlayer):
+class neurolayer:
+	def __init__(self, inputlayer, hiddenlayer_list, outputlayer):
 		self.inputlayer=[]
-		self.hiddenlayer=[]
+		self.hiddenlayers=[]
 		self.outputlayer=[]
+		self.errorlayer=[]
 		self.trainingdata=[]
 		for i in range(inputlayer):
 			self.inputlayer.append(neuron())
-		for i in range(hiddenlayer):
-			self.hiddenlayer.append(neuron([1]*inputlayer, self.inputlayer))
+		for i in range(len(hiddenlayer_list)):
+			self.hiddenlayers.append([])
+		for i in range(hiddenlayer_list[0]):
+			self.hiddenlayers[0].append(neuron([1]*inputlayer, self.inputlayer))
+		for i in range(1,len(hiddenlayer_list)):
+			for j in range(neuronnumber[i]):
+				self.hiddenlayers[i].append(neuron([1]*hiddenlayer_list[i-1], self.hiddenlayers[i-1]))
 		for i in range(outputlayer):
 			self.outputlayer.append(neuron([1]*hiddenlayer, self.hiddenlayer))
+		for i in range(outputlayer):
+			self.errorlayer.append(neuron([1], self.outputlayer[i]))
 			
 	def setinput(self, inputlist):
+		self.inputlist=inputlist
 		for i in range(len(inputlist)):
 			self.inputlayer[i].value=inputlist[i]
 			
 	def calcoutput(self):
-		for neu in self.hiddenlayer:
-			neu.output()
-		for neu in self.outputlayer:
-			neu.output()
-			
+		for layer in self.hiddenlayers:
+			for n in layer:
+				n.output()
+		for n in self.outputlayer:
+			n.output()
+	#trainingsdaten in form von dict {input:output}		
 	def addtrainingdata(self, data):
 		self.trainingdata.append(data)
 		
-	#~ def optimize(self):
+	def backpropagation(self):
+		
+		
+		
 		
 
 class neuron:
@@ -58,3 +71,7 @@ class neuron:
 			summe+=self.ancestors[i].value*self.weights[i]
 		self.value=self.fermithresh(summe)
 		self.deriv=fermideriv(summe)
+
+class errornode:
+	def __init__(self, ):
+		
