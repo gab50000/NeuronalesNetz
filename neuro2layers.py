@@ -13,13 +13,15 @@ class twolayernetwork:
 		self.outputderiv=np.zeros( (outputlayerlength, 1), float)
 		self.W1=np.random.random_sample( (inputlayerlength+1, hiddenlayerlength) ) # +1 due to constant bias
 		self.W2=np.random.random_sample( (hiddenlayerlength+1, outputlayerlength) ) # +1 due to constant bias
+		self.W1[-1,:]=0.3
+		self.W2[-1,:]=0.3
 		self.gamma =gamma
 
 	def fermithresh(self, x):
 		return 1./(math.exp(-x)+1)
 
 	def forwardprop(self, inputarr):
-		#~ pdb.set_trace()
+		pdb.set_trace()
 		if len(inputarr) != len(self.inputlayer[0])-1:
 			raise ValueError
 		self.inputlayer[0,:-1]=inputarr		
@@ -46,15 +48,15 @@ class twolayernetwork:
 		return totalerror
 				
 	def backprop(self):
-		pdb.set_trace()
+		#~ pdb.set_trace()
 		dW1=np.zeros((self.W1.shape[0]-1, self.W1.shape[1]), float)
 		dW2=np.zeros((self.W2.shape[0]-1, self.W2.shape[1]), float)
 		for key in self.learningset.keys():
 			self.forwardprop(key)
 			delta2=self.outputderiv*(self.outputlayer-self.learningset[key]).T
 			delta1=self.hiddenderiv*np.dot(self.W2[:-1], delta2)
-			dW2+=(delta2*self.hiddenlayer).T
-			dW1+=(delta1*self.inputlayer).T
-		
-		self.W1-=self.gamma*dW1
-		self.W2-=self.gamma*dW2
+			dW2+=(delta2*self.hiddenlayer[0][:-1]).T
+			dW1+=(delta1*self.inputlayer[0][:-1]).T
+
+		self.W1[:-1,:]-=self.gamma*dW1
+		self.W2[:-1,:]-=self.gamma*dW2
