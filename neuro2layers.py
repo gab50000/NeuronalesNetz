@@ -18,7 +18,7 @@ class twolayernetwork:
 		self.gamma =gamma
 
 	def fermithresh(self, x):
-		return 1./(math.exp(-x)+1)
+		return 1./(np.exp(-x)+1)
 
 	def forwardprop(self, inputarr):
 		#~ pdb.set_trace()
