@@ -5,98 +5,89 @@ import matplotlib.pylab as plt
 import ipdb
 
 
-class TwoLayerNetwork:
-    def __init__(self, inputlayerlength, hiddenlayerlength, outputlayerlength, gamma):
-        self.inputlayerlength = inputlayerlength
-        self.hiddenlayerlength = hiddenlayerlength
-        self.outputlayerlength = outputlayerlength
+class FeedForwardNetwork:
+    def __init__(self, layer_lengths, hiddenlayer, bias=True, hidden_activation=np.tanh, output_activation=lambda x:x):
+        self.inputlayer_length = layer_lengths[0]
+        self.hiddenlayer_lengths = layer_lengths[1:-1]
+        self.outputlayer_length = layer_lengths[-1]
 
-        self.inputlayer = np.zeros((1, inputlayerlength + 1), float)
-        self.hiddenlayer = np.zeros((1, hiddenlayerlength + 1), float)
-        self.hiddenderiv = np.zeros((1, hiddenlayerlength + 1), float)
-        self.outputlayer = np.zeros((1, outputlayerlength), float)
-        self.outputderiv = np.zeros((1, outputlayerlength + 1), float)
-        self.W1 = np.random.uniform(-1, 1, size=(inputlayerlength + 1, hiddenlayerlength))  # +1 due to constant bias
-        self.W2 = np.random.uniform(-1, 1, size=(hiddenlayerlength + 1, outputlayerlength))  # +1 due to constant bias
-        # ~ self.W1[-1,:]=0.3
-        # ~ self.W2[-1,:]=0.3
-        self.gamma = gamma
+        self.bias = bias
+        self.hidden_activation = hidden_activation
+        self.output_activation = output_activation
 
-        # set biases
-        self.inputlayer[0, -1] = 1
-        self.hiddenlayer[0, -1] = 1
+        self.weights = []
+        weight_input_hidden = np.random.random((self.inputlayer_length+bias, self.hiddenlayer_lengths[0]))
+        self.weights.append(weight_input_hidden)
+        for hl_prev, hl_next in zip(self.hiddenlayer_lengths[:-1], self.hiddenlayer_lengths[1:]):
+            hl_weight = np.random.random((hl_prev+bias, hl_next))
+            self.weights.append(hl_weight)
+        weight_hidden_output = np.random.random(self.hiddenlayer_lengths[-1]+bias, self.outputlayer_length)
+        self.weights.append(weight_hidden_output)
 
-    def __str__(self):
-        # ~ pdb.set_trace()
-        outstr = ""
-        fstr = "{:<" + str(self.inputlayer.shape[0]) + "}::{:<" + str(self.W1.shape[1]) + "}::{:<" + str(
-            self.hiddenlayer.shape[0]) + "}::{:<" + str(self.W2.shape[1]) + "}::{:<" + str(
-            self.outputlayer.shape[0]) + "}"
-        maxlen = max(self.inputlayer.shape[1], self.hiddenlayer.shape[1], self.outputlayer.shape[1])
-        for i in xrange(maxlen):
-            outstr += fstr.format(self.inputlayer[:, i] if i < self.inputlayer.shape[1] else "",
-                                  self.W1[i] if i < self.W1.shape[0] else "",
-                                  self.hiddenlayer[:, i] if i < self.hiddenlayer.shape[1] else "",
-                                  self.W2[i] if i < self.W2.shape[0] else "",
-                                  self.outputlayer[:, i] if i < self.outputlayer.shape[1] else "") + "\n"
+    def forward_prop(self, inputarr, weights):
+        intermediate = np.dot(inputarr[:, :self.inputlayer_length], weights[0][:self.inputlayer_length])
+        if self.bias:
+            intermediate += weights[0][-1]
+        intermediate = self.hidden_activation(intermediate)
+        for weight in weights[1:-1]:
+            intermediate = np.dot(intermediate[:, :self.inputlayer_length], weight[:self.inputlayer_length])
+            if self.bias:
+                intermediate += weight[-1]
+        output = np.dot(intermediate[:, :self.inputlayer_length], weights[-1][:self.inputlayer_length])
+        output = self.output_activation(output)
 
-        return outstr
+        return output
 
-    def fermi_function(self, x):
-        return 1. / (np.exp(-x) + 1)
+    def calc_error(self, weights_array, inputs, outputs):
+        weights = []
+        shape = self.inputlayer_length + self.bias, self.hiddenlayer_lengths[0]
+        weights.append(weights_array[:shape[0]*shape[1]].reshape(shape))
+        start_pos = shape[0]*shape[1]
+        for hl_prev, hl_next in zip(self.hiddenlayer_lengths[:-1], self.hiddenlayer_lengths[1:]):
+            shape = hl_prev+self.bias, hl_next
+            weights.append(weights_array[start_pos:start_pos+shape[0]*shape[1]].reshape(shape))
+            start_pos += shape[0]*shape[1]
+        shape = self.hiddenlayer_lengths[-1] + self.bias, self.outputlayer_length
+        weights.append(weights_array[start_pos:start_pos+shape[0]*shape[1]])
 
-    def forwardprop(self, inputarr, weights1, weights2):
-        self.inputlayer[0, :-1] = inputarr
-        self.hiddenlayer[0, :-1] = np.dot(self.inputlayer, weights1)
-        self.hiddenlayer[0, :-1] = np.tanh(self.hiddenlayer[0, :-1])
-        # self.hiddenderiv[0, :-1] = self.hiddenlayer[0, :-1] * (1 - self.hiddenlayer[0, :-1])
-        # self.hiddenderiv[0, -1] = 1
+        nn_output = self.forward_prop(inputs, weights)
 
-        outputlayer = np.dot(self.hiddenlayer, weights2)
-        # outputlayer = np.tanh(self.outputlayer)
-        # outputlayer = self.fermi_function(self.outputlayer)
-        # self.outputderiv[0] = self.outputlayer[0] * (1 - self.outputlayer[0])
-        return outputlayer
+        return ((nn_output - outputs)**2).mean()
 
-    def calc_error(self, weights, inputs, outputs):
-        len_W1 = (self.inputlayerlength+1) * self.hiddenlayerlength
-        # len_W2 = (self.hiddenlayerlength+1) * self.outputlayerlength
 
-        W1 = weights[:len_W1].reshape((self.inputlayerlength+1, self.hiddenlayerlength))
-        W2 = weights[len_W1:].reshape((self.hiddenlayerlength+1, self.outputlayerlength))
+        # len_W1 = (self.inputlayerlength+1) * self.hiddenlayerlength
+        # # len_W2 = (self.hiddenlayerlength+1) * self.outputlayerlength
+        #
+        # W1 = weights[:len_W1].reshape((self.inputlayerlength+1, self.hiddenlayerlength))
+        # W2 = weights[len_W1:].reshape((self.hiddenlayerlength+1, self.outputlayerlength))
+        #
+        # print "W1:"
+        # print W1
+        # print "W2:"
+        # print W2
+        #
+        # totalerror = 0
+        # for input, output in zip(inputs, outputs):
+        #     outputlayer = self.forwardprop(input, W1, W2)
+        #     totalerror += ((outputlayer - output) ** 2).sum()
+        # totalerror /= inputs.shape[0]
+        # return totalerror
 
-        print "W1:"
-        print W1
-        print "W2:"
-        print W2
-
-        totalerror = 0
-        for input, output in zip(inputs, outputs):
-            outputlayer = self.forwardprop(input, W1, W2)
-            totalerror += ((outputlayer - output) ** 2).sum()
-        totalerror /= inputs.shape[0]
-        return totalerror
-
-    def backprop(self):
-        # ~ pdb.set_trace()
-        dW1 = np.zeros((self.W1.shape[0], self.W1.shape[1]), float)
-        dW2 = np.zeros((self.W2.shape[0], self.W2.shape[1]), float)
-        for key in self.learningset.keys():
-            # ~ pdb.set_trace()
-            self.forwardprop(key)
-            D2 = np.identity(self.outputlayer.shape[1]) * self.outputlayer
-            D1 = np.identity(self.hiddenlayer.shape[1] - 1) * self.hiddenlayer[0, :-1]
-            # ~ pdb.set_trace()
-            e = (self.outputlayer - self.learningset[key]) ** 2
-            delta2 = np.dot(D2, e)
-            delta1 = np.dot(np.dot(D1, self.W2[:-1]), delta2)
-            # ~ delta2=self.outputderiv[:-1]*(self.outputlayer-self.learningset[key]).T
-            # ~ delta1=self.hiddenderiv[:]*np.dot(self.W2, delta2)
-            dW2 += (delta2 * self.hiddenlayer).T
-            dW1 += (delta1 * self.inputlayer).T
-
-        self.W1 -= self.gamma * dW1
-        self.W2 -= self.gamma * dW2
+    def optimize(self, inputs, outputs):
+        weights = np.hstack([obj.W1.flatten(), obj.W2.flatten()])
+        results = minimize(fun=obj.calc_error, x0=weights, args=(inputs, outputs), method='BFGS', options={'xtol': 1e-8, 'disp': True})
+        result = results["x"]
+        obj.W1 = result[:obj.W1.size].reshape(obj.W1.shape)
+        obj.W2 = result[obj.W1.size:].reshape(obj.W2.shape)
+        x = np.linspace(-5, 5)
+        y = np.zeros(x.shape)
+        for i, v in enumerate(x):
+            y[i] = obj.forward_prop(v, obj.W1, obj.W2)
+        plt.plot(x, y)
+        plt.plot(inputs, outputs)
+        plt.show()
+        ipdb.set_trace()
+        return result["x"]
 
 def optimize(obj, inputs, outputs):
     weights = np.hstack([obj.W1.flatten(), obj.W2.flatten()])
@@ -107,7 +98,7 @@ def optimize(obj, inputs, outputs):
     x = np.linspace(-5, 5)
     y = np.zeros(x.shape)
     for i, v in enumerate(x):
-        y[i] = obj.forwardprop(v, obj.W1, obj.W2)
+        y[i] = obj.forward_prop(v, obj.W1, obj.W2)
     plt.plot(x, y)
     plt.plot(inputs, outputs)
     plt.show()
@@ -115,7 +106,7 @@ def optimize(obj, inputs, outputs):
     return result["x"]
 
 def test():
-    nn = TwoLayerNetwork(inputlayerlength=1, hiddenlayerlength=10, outputlayerlength=1, gamma=1)
+    nn = FeedForwardNetwork(inputlayerlength=1, hiddenlayerlength=10, outputlayerlength=1, gamma=1)
     inputs = np.linspace(-10, 10)
     outputs = inputs**2
     # outputs = np.sin(inputs)  # + np.random.uniform(-.1, -1, size=inputs.shape)
