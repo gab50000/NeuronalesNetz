@@ -34,11 +34,11 @@ class FeedForwardNetwork:
         if self.bias:
             intermediate += weights[0][-1]
         intermediate = self.hidden_activation(intermediate)
-        for weight in weights[1:-1]:
-            intermediate = np.dot(intermediate[:, :self.inputlayer_length], weight[:self.inputlayer_length])
+        for weight, hl_len in zip(weights[1:-1], self.hiddenlayer_lengths):
+            intermediate = np.dot(intermediate[:, :hl_len], weight[:hl_len])
             if self.bias:
                 intermediate += weight[-1]
-        output = np.dot(intermediate[:, :self.inputlayer_length], weights[-1][:self.inputlayer_length])
+        output = np.dot(intermediate[:, :self.outputlayer_length], weights[-1][:self.outputlayer_length])
         if self.bias:
             output += weights[-1][-1]
         output = self.output_activation(output)
