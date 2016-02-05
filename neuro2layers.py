@@ -64,16 +64,18 @@ class FeedForwardNetwork:
     def optimize(self, training_set):
         inputs, outputs = training_set
         weights = np.hstack([w.flatten() for w in self.weights])
-        results = minimize(fun=self.calc_error, x0=weights, args=(inputs, outputs), method='BFGS', options={'xtol': 1e-8, 'disp': True})
+        results = minimize(fun=self.calc_error, x0=weights, args=(inputs, outputs), method='BFGS')
         result = results["x"]
         print "diff:", (weights - result).sum()
         self.weights = self._unflatten(result)
         return self.weights
 
 def test():
-    nn = FeedForwardNetwork([1, 20, 1])
+    def f(x):
+        return np.sin(x)*np.exp(-x**2/100)
+    nn = FeedForwardNetwork([1, 5, 1])
     inputs = np.linspace(-10, 10, 25)[:, None]
-    outputs = np.sin(inputs)
+    outputs = f(inputs)
     # outputs = inputs**2
     print inputs.shape
     print outputs.shape
@@ -82,11 +84,9 @@ def test():
     x = np.linspace(-15, 15, 100)
     y = nn.sim(x[:, None])
 
-    plt.plot(x, np.sin(x), "x")
+    plt.plot(x, f(x), "x")
     plt.plot(x, y)
     plt.show()
-
-    ipdb.set_trace()
 
 if __name__ == "__main__":
     test()
