@@ -12,6 +12,7 @@ class FeedForwardNetwork:
         self.inputlayer_length = layer_lengths[0]
         self.hiddenlayer_lengths = layer_lengths[1:-1]
         self.outputlayer_length = layer_lengths[-1]
+        self.layer_lengths = layer_lengths
 
         self.bias = bias
         self.hidden_activation = hidden_activation
@@ -27,22 +28,15 @@ class FeedForwardNetwork:
         self.weights.append(weight_hidden_output)
 
     def _forward_prop(self, inputarr, weights):
-        try:
-            intermediate = np.dot(inputarr[:, :self.inputlayer_length], weights[0][:self.inputlayer_length])
-        except IndexError:
-            print "IndexError: Did you remember to reshape the input array to a columnar array?"
-        if self.bias:
-            intermediate += weights[0][-1]
-        intermediate = self.hidden_activation(intermediate)
-        for weight, hl_len in zip(weights[1:-1], self.hiddenlayer_lengths):
-            intermediate = np.dot(intermediate[:, :hl_len], weight[:hl_len])
+        for weight, layer_len in zip(weights, self.layer_lengths[:-2]):
+            inputarr = np.dot(inputarr, weight[:layer_len])
             if self.bias:
-                intermediate += weight[-1]
-        output = np.dot(intermediate[:, :self.outputlayer_length], weights[-1][:self.outputlayer_length])
+                inputarr += weight[-1]
+            inputarr = self.hidden_activation(inputarr)
+        output = np.dot(inputarr, weights[-1][:self.layer_lengths[-2]])
         if self.bias:
             output += weights[-1][-1]
         output = self.output_activation(output)
-
         return output
 
     def sim(self, input):
@@ -51,13 +45,8 @@ class FeedForwardNetwork:
     def calc_error(self, weights_array, inputs, outputs):
         weights = self._unflatten(weights_array)
         nn_output = self._forward_prop(inputs, weights)
-        for i, weight in enumerate(weights, 1):
-            print("Weight", i)
-            print weight
-
-        error = ((nn_output - outputs[:, 0])**2).mean()
+        error = ((nn_output - outputs)**2).mean()
         return error
-
 
     def _unflatten(self, weight_array):
         weights = []
@@ -72,24 +61,6 @@ class FeedForwardNetwork:
         weights.append(weight_array[start_pos:start_pos+shape[0]*shape[1]].reshape(shape))
         return weights
 
-        # len_W1 = (self.inputlayerlength+1) * self.hiddenlayerlength
-        # # len_W2 = (self.hiddenlayerlength+1) * self.outputlayerlength
-        #
-        # W1 = weights[:len_W1].reshape((self.inputlayerlength+1, self.hiddenlayerlength))
-        # W2 = weights[len_W1:].reshape((self.hiddenlayerlength+1, self.outputlayerlength))
-        #
-        # print "W1:"
-        # print W1
-        # print "W2:"
-        # print W2
-        #
-        # totalerror = 0
-        # for input, output in zip(inputs, outputs):
-        #     outputlayer = self.forwardprop(input, W1, W2)
-        #     totalerror += ((outputlayer - output) ** 2).sum()
-        # totalerror /= inputs.shape[0]
-        # return totalerror
-
     def optimize(self, training_set):
         inputs, outputs = training_set
         weights = np.hstack([w.flatten() for w in self.weights])
@@ -98,22 +69,6 @@ class FeedForwardNetwork:
         print "diff:", (weights - result).sum()
         self.weights = self._unflatten(result)
         return self.weights
-
-# def optimize(obj, inputs, outputs):
-#     weights = np.hstack([obj.W1.flatten(), obj.W2.flatten()])
-#     results = minimize(fun=obj.calc_error, x0=weights, args=(inputs, outputs), method='BFGS', options={'xtol': 1e-8, 'disp': True})
-#     result = results["x"]
-#     obj.W1 = result[:obj.W1.size].reshape(obj.W1.shape)
-#     obj.W2 = result[obj.W1.size:].reshape(obj.W2.shape)
-#     x = np.linspace(-5, 5)
-#     y = np.zeros(x.shape)
-#     for i, v in enumerate(x):
-#         y[i] = obj.forward_prop(v, obj.W1, obj.W2)
-#     plt.plot(x, y)
-#     plt.plot(inputs, outputs)
-#     plt.show()
-#     ipdb.set_trace()
-#     return result["x"]
 
 def test():
     nn = FeedForwardNetwork([1, 20, 1])
@@ -132,19 +87,6 @@ def test():
     plt.show()
 
     ipdb.set_trace()
-
-# def optitest():
-#     def devsquare(vars, x, y):
-#         m, y0 = vars
-#         deviation = ((m*x+y0 - y)**2).sum()
-#         return deviation
-#
-#     x = np.linspace(0, 10)
-#     y = 3*x + 2.5 + np.random.uniform(-1, 1, size=x.shape)
-#
-#     results = minimize(devsquare, x0=(0, 0), args=(x, y))
-#     ipdb.set_trace()
-
 
 if __name__ == "__main__":
     test()
