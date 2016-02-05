@@ -9,31 +9,30 @@ def sigmoid(x):
 
 class FeedForwardNetwork:
     def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=lambda x:x):
-        self.inputlayer_length = layer_lengths[0]
-        self.hiddenlayer_lengths = layer_lengths[1:-1]
-        self.outputlayer_length = layer_lengths[-1]
         self.layer_lengths = layer_lengths
 
         self.bias = bias
+        # if bias is activated, the bias weights are left out from the matrix multiplication
+        if self.bias:
+            self.weight_slicer = slice(None, -1)
+        else:
+            self.weight_slicer = slice(None, None)
+
         self.hidden_activation = hidden_activation
         self.output_activation = output_activation
 
         self.weights = []
-        weight_input_hidden = np.random.random((self.inputlayer_length+bias, self.hiddenlayer_lengths[0]))
-        self.weights.append(weight_input_hidden)
-        for hl_prev, hl_next in zip(self.hiddenlayer_lengths[:-1], self.hiddenlayer_lengths[1:]):
+        for hl_prev, hl_next in zip(self.layer_lengths[:-1], self.layer_lengths[1:]):
             hl_weight = np.random.random((hl_prev+bias, hl_next))
             self.weights.append(hl_weight)
-        weight_hidden_output = np.random.random((self.hiddenlayer_lengths[-1]+bias, self.outputlayer_length))
-        self.weights.append(weight_hidden_output)
 
     def _forward_prop(self, inputarr, weights):
-        for weight, layer_len in zip(weights, self.layer_lengths[:-2]):
-            inputarr = np.dot(inputarr, weight[:layer_len])
+        for weight in weights[:-1]:
+            inputarr = np.dot(inputarr, weight[self.weight_slicer])
             if self.bias:
                 inputarr += weight[-1]
             inputarr = self.hidden_activation(inputarr)
-        output = np.dot(inputarr, weights[-1][:self.layer_lengths[-2]])
+        output = np.dot(inputarr, weights[-1][self.weight_slicer])
         if self.bias:
             output += weights[-1][-1]
         output = self.output_activation(output)
@@ -50,15 +49,11 @@ class FeedForwardNetwork:
 
     def _unflatten(self, weight_array):
         weights = []
-        shape = self.inputlayer_length + self.bias, self.hiddenlayer_lengths[0]
-        weights.append(weight_array[:shape[0]*shape[1]].reshape(shape))
-        start_pos = shape[0]*shape[1]
-        for hl_prev, hl_next in zip(self.hiddenlayer_lengths[:-1], self.hiddenlayer_lengths[1:]):
+        start_pos = 0
+        for hl_prev, hl_next in zip(self.layer_lengths[:-1], self.layer_lengths[1:]):
             shape = hl_prev+self.bias, hl_next
             weights.append(weight_array[start_pos:start_pos+shape[0]*shape[1]].reshape(shape))
             start_pos += shape[0]*shape[1]
-        shape = self.hiddenlayer_lengths[-1] + self.bias, self.outputlayer_length
-        weights.append(weight_array[start_pos:start_pos+shape[0]*shape[1]].reshape(shape))
         return weights
 
     def optimize(self, training_set):
@@ -73,10 +68,9 @@ class FeedForwardNetwork:
 def test():
     def f(x):
         return np.sin(x)*np.exp(-x**2/100)
-    nn = FeedForwardNetwork([1, 5, 1])
+    nn = FeedForwardNetwork([1, 10, 1])
     inputs = np.linspace(-10, 10, 25)[:, None]
     outputs = f(inputs)
-    # outputs = inputs**2
     print inputs.shape
     print outputs.shape
     nn.optimize((inputs, outputs))
