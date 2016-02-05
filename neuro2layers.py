@@ -27,7 +27,10 @@ class FeedForwardNetwork:
         self.weights.append(weight_hidden_output)
 
     def _forward_prop(self, inputarr, weights):
-        intermediate = np.dot(inputarr[:, :self.inputlayer_length], weights[0][:self.inputlayer_length])
+        try:
+            intermediate = np.dot(inputarr[:, :self.inputlayer_length], weights[0][:self.inputlayer_length])
+        except IndexError:
+            print "IndexError: Did you remember to reshape the input array to a columnar array?"
         if self.bias:
             intermediate += weights[0][-1]
         intermediate = self.hidden_activation(intermediate)
@@ -36,6 +39,8 @@ class FeedForwardNetwork:
             if self.bias:
                 intermediate += weight[-1]
         output = np.dot(intermediate[:, :self.inputlayer_length], weights[-1][:self.inputlayer_length])
+        if self.bias:
+            output += weights[-1][-1]
         output = self.output_activation(output)
 
         return output
@@ -44,10 +49,13 @@ class FeedForwardNetwork:
         return self._forward_prop(input, self.weights)
 
     def calc_error(self, weights_array, inputs, outputs):
-        print weights_array
         weights = self._unflatten(weights_array)
         nn_output = self._forward_prop(inputs, weights)
-        error = ((nn_output - outputs[:, 0])**2).sum()
+        for i, weight in enumerate(weights, 1):
+            print("Weight", i)
+            print weight
+
+        error = ((nn_output - outputs[:, 0])**2).mean()
         return error
 
 
@@ -61,7 +69,7 @@ class FeedForwardNetwork:
             weights.append(weight_array[start_pos:start_pos+shape[0]*shape[1]].reshape(shape))
             start_pos += shape[0]*shape[1]
         shape = self.hiddenlayer_lengths[-1] + self.bias, self.outputlayer_length
-        weights.append(weight_array[start_pos:start_pos+shape[0]*shape[1]])
+        weights.append(weight_array[start_pos:start_pos+shape[0]*shape[1]].reshape(shape))
         return weights
 
         # len_W1 = (self.inputlayerlength+1) * self.hiddenlayerlength
@@ -85,7 +93,7 @@ class FeedForwardNetwork:
     def optimize(self, training_set):
         inputs, outputs = training_set
         weights = np.hstack([w.flatten() for w in self.weights])
-        results = minimize(fun=self.calc_error, x0=weights, args=(inputs, outputs), method='BFGS')
+        results = minimize(fun=self.calc_error, x0=weights, args=(inputs, outputs), method='BFGS', options={'xtol': 1e-8, 'disp': True})
         result = results["x"]
         print "diff:", (weights - result).sum()
         self.weights = self._unflatten(result)
@@ -110,7 +118,8 @@ class FeedForwardNetwork:
 def test():
     nn = FeedForwardNetwork([1, 20, 1])
     inputs = np.linspace(-10, 10, 25)[:, None]
-    outputs = inputs**2
+    outputs = np.sin(inputs)
+    # outputs = inputs**2
     print inputs.shape
     print outputs.shape
     nn.optimize((inputs, outputs))
@@ -118,7 +127,7 @@ def test():
     x = np.linspace(-15, 15, 100)
     y = nn.sim(x[:, None])
 
-    plt.plot(x, x**2, "x")
+    plt.plot(x, np.sin(x), "x")
     plt.plot(x, y)
     plt.show()
 
