@@ -81,7 +81,7 @@ class FeedForwardNetwork:
         values becomes minimal."""
         inputs, outputs = training_set
         weights = np.hstack([w.flatten() for w in self.weights])
-        results = minimize(fun=self.calc_error, x0=weights, args=(inputs, outputs), method='BFGS')
+        results = minimize(fun=self._calc_error, x0=weights, args=(inputs, outputs), method='BFGS')
         result = results["x"]
         print "diff:", (weights - result).sum()
         self.weights = self._unflatten(result)

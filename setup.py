@@ -19,6 +19,9 @@ setup(name='neuro',
           'numpy',
           'ipdb',
       ],
+      setup_requires = [
+          'numpy'
+      ],
       test_suite='nose.collector',
       tests_require=['nose'],
       entry_points={

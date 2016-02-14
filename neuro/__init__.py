@@ -1,1 +1,1 @@
-from neuro import FeedForwardNetwork
+from neuro import FeedForwardNetwork, sigmoid
