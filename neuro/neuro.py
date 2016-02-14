@@ -2,13 +2,25 @@
 import numpy as np
 from scipy.optimize import minimize as minimize
 import matplotlib.pylab as plt
-import ipdb
+
 
 def sigmoid(x):
     return 1/(1+np.exp(-x))
 
+
 class FeedForwardNetwork:
-    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=lambda x:x):
+    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=lambda x: x):
+        """A FeedForwardNetwork object is initialized by providing a list that contains the number of nodes for
+        each layer.
+        For example, a FFN object with an input layer with one node, a hidden layer with 5 nodes and an output layer
+         with 2 nodes is initialized via
+
+            ffn = FeedForwardNetwork([1, 5, 2])
+
+        Further (optional) parameters are
+          * bias (expects a boolean), which determines whether each layer receives an additional bias node
+          * hidden_activation, which determines the activation function for each hidden layer
+          * output_activation, which determines the activation function for the output layer"""
         self.layer_lengths = layer_lengths
 
         self.bias = bias
@@ -38,6 +50,9 @@ class FeedForwardNetwork:
         output = self.output_activation(output)
         return output
 
+    def sim(self, input_array):
+        """Calculates the output for a given array of inputs.
+        Expects an array of the shape (No. of inputs, No. of input nodes)"""
     def sim(self, input):
         return self._forward_prop(input, self.weights)
 
@@ -57,6 +72,9 @@ class FeedForwardNetwork:
         return weights
 
     def optimize(self, training_set):
+        """Expects a tuple consisting of an array of input values and an array of output values.
+        The weights are the optimized until the squared deviation of the neural network's output from the output
+        values becomes minimal."""
         inputs, outputs = training_set
         weights = np.hstack([w.flatten() for w in self.weights])
         results = minimize(fun=self.calc_error, x0=weights, args=(inputs, outputs), method='BFGS')
