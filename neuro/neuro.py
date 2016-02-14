@@ -38,13 +38,13 @@ class FeedForwardNetwork:
             hl_weight = np.random.random((hl_prev+bias, hl_next))
             self.weights.append(hl_weight)
 
-    def _forward_prop(self, inputarr, weights):
+    def _forward_prop(self, input_array, weights):
         for weight in weights[:-1]:
-            inputarr = np.dot(inputarr, weight[self.weight_slicer])
+            input_array = np.dot(input_array, weight[self.weight_slicer])
             if self.bias:
-                inputarr += weight[-1]
-            inputarr = self.hidden_activation(inputarr)
-        output = np.dot(inputarr, weights[-1][self.weight_slicer])
+                input_array += weight[-1]
+            input_array = self.hidden_activation(input_array)
+        output = np.dot(input_array, weights[-1][self.weight_slicer])
         if self.bias:
             output += weights[-1][-1]
         output = self.output_activation(output)
@@ -53,14 +53,18 @@ class FeedForwardNetwork:
     def sim(self, input_array):
         """Calculates the output for a given array of inputs.
         Expects an array of the shape (No. of inputs, No. of input nodes)"""
-    def sim(self, input):
-        return self._forward_prop(input, self.weights)
+        return self._forward_prop(input_array, self.weights)
 
-    def calc_error(self, weights_array, inputs, outputs):
-        weights = self._unflatten(weights_array)
+    def _calc_error(self, weight_array, inputs, outputs):
+        weights = self._unflatten(weight_array)
         nn_output = self._forward_prop(inputs, weights)
         error = ((nn_output - outputs)**2).mean()
         return error
+
+    def calc_error(self, inputs, outputs):
+        """Returns the mean squared deviation of the neural network's output from a training set"""
+        weights = np.hstack([w.flatten() for w in self.weights])
+        return self._calc_error(weights, inputs, outputs)
 
     def _unflatten(self, weight_array):
         weights = []
@@ -83,10 +87,11 @@ class FeedForwardNetwork:
         self.weights = self._unflatten(result)
         return self.weights
 
+
 def test():
     def f(x):
         return np.sin(x)*np.exp(-x**2/100)
-    nn = FeedForwardNetwork([1, 10, 1])
+    nn = FeedForwardNetwork([1, 3, 1])
     inputs = np.linspace(-10, 10, 25)[:, None]
     outputs = f(inputs)
     print inputs.shape
