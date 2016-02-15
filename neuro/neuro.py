@@ -9,7 +9,7 @@ def sigmoid(x):
 
 
 class FeedForwardNetwork:
-    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=lambda x: x):
+    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=identity, verbose=False):
         """A FeedForwardNetwork object is initialized by providing a list that contains the number of nodes for
         each layer.
         For example, a FFN object with an input layer with one node, a hidden layer with 5 nodes and an output layer
@@ -22,8 +22,8 @@ class FeedForwardNetwork:
           * hidden_activation, which determines the activation function for each hidden layer
           * output_activation, which determines the activation function for the output layer"""
         self.layer_lengths = layer_lengths
-
         self.bias = bias
+        self.verbose = verbose
         # if bias is activated, the bias weights are left out from the matrix multiplication
         if self.bias:
             self.weight_slicer = slice(None, -1)
@@ -39,6 +39,8 @@ class FeedForwardNetwork:
             self.weights.append(hl_weight)
 
     def _forward_prop(self, input_array, weights):
+        if self.verbose:
+            print "forward prop"
         for weight in weights[:-1]:
             input_array = np.dot(input_array, weight[self.weight_slicer])
             if self.bias:
@@ -56,6 +58,8 @@ class FeedForwardNetwork:
         return self._forward_prop(input_array, self.weights)
 
     def _calc_error(self, weight_array, inputs, outputs):
+        if self.verbose:
+            print "error"
         weights = self._unflatten(weight_array)
         nn_output = self._forward_prop(inputs, weights)
         error = ((nn_output - outputs)**2).mean()
