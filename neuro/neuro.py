@@ -5,7 +5,13 @@ import matplotlib.pylab as plt
 
 
 def sigmoid(x):
-    return 1/(1+np.exp(-x))
+    x*=-1
+    np.exp(x, x)
+    x+=1
+    np.power(x, -1)
+    
+def identity(x):
+    pass
 
 
 class FeedForwardNetwork:
@@ -45,11 +51,11 @@ class FeedForwardNetwork:
             input_array = np.dot(input_array, weight[self.weight_slicer])
             if self.bias:
                 input_array += weight[-1]
-            input_array = self.hidden_activation(input_array)
+            self.hidden_activation(input_array)
         output = np.dot(input_array, weights[-1][self.weight_slicer])
         if self.bias:
             output += weights[-1][-1]
-        output = self.output_activation(output)
+        self.output_activation(output)
         return output
 
     def sim(self, input_array):
