@@ -55,6 +55,17 @@ class FeedForwardNetwork:
         else:
             self._prop = self._forward_prop
             
+    def _determine_free_ram(self):
+        with open("/proc/sysinfo", "r") as f:
+            info = f.readlines()
+        free_bytes = int(info[0].split()[1]) * 1024
+        return free_bytes
+        
+    def _determine_necessary_ram(self, input_length, dtype_bitsize=32):
+        total = 0
+        for length in self.layer_lengths:
+            total += input_length * layer_length * dtype_size / 8.0
+        return total
 
     def _forward_prop(self, input_array, weights):
         if self.verbose:
