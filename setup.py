@@ -4,18 +4,6 @@ from distutils.extension import Extension
 from Cython.Distutils import build_ext
 from Cython.Build import cythonize
 
-ext_modules = [
-    Extension(
-        "neuro.neuro_cy",
-        ["neuro/neuro_cy.pyx"],
-        libraries=["m"],
-        extra_compile_args=["-O3", "-Wall"],
-        language="c++",
-        library_dirs=[],
-        include_dirs=["neuro", numpy.get_include()]
-    ),
-]
-
 setup(name='neuro',
       version='0.1',
       description='Small Python implementation of a Feed Forward Neural Network',
@@ -46,6 +34,4 @@ setup(name='neuro',
       },
       include_package_data=True,
       zip_safe=False,
-      ext_modules=ext_modules,
-      cmdclass={'build_ext': build_ext}
       )
