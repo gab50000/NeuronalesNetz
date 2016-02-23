@@ -1,8 +1,9 @@
 #!/usr/bin/python
+# encoding:utf-8
 import numpy as np
 from scipy.optimize import minimize as minimize
 import matplotlib.pylab as plt
-
+import ipdb
 
 def sigmoid(x):
     x*=-1
@@ -83,12 +84,13 @@ class FeedForwardNetwork:
             print "forward prop chunked"
         for weight, act_fct in zip(weights, self.activation_fcts):
             temp_arr = np.zeros((input_array.shape[0], weight[self.weight_slicer].shape[1]), dtype=input_array.dtype)
+            
             for chunk in xrange(0, temp_arr.shape[0], self.chunk_size):
                 if chunk + self.chunk_size > temp_arr.shape[0]:
                     sl = slice(chunk, None)
                 else:
                     sl = slice(chunk+self.chunk_size)
-                np.dot(input_array[sl], weight[self.weight_slicer], out=temp_arr[sl])
+                temp_arr[sl] = np.dot(input_array[sl], weight[self.weight_slicer])
             input_array = temp_arr
             if self.bias:
                 input_array += weight[-1]
@@ -128,7 +130,7 @@ class FeedForwardNetwork:
         values becomes minimal."""
         inputs, outputs = training_set
         weights = np.hstack([w.flatten() for w in self.weights])
-        results = minimize(fun=self._calc_error, x0=weights, args=(inputs, outputs), method='BFGS')
+        results = minimize(fun=self._calc_error, x0=weights, args=(inputs, outputs), method='BFGS', options={"disp":True})
         result = results["x"]
         print "diff:", (weights - result).sum()
         self.weights = self._unflatten(result)
