@@ -3,6 +3,7 @@
 import numpy as np
 from scipy.optimize import minimize as minimize
 import matplotlib.pylab as plt
+import cPickle as pickle
 import ipdb
 
 def sigmoid(x):
@@ -124,17 +125,22 @@ class FeedForwardNetwork:
             start_pos += shape[0]*shape[1]
         return weights
 
-    def optimize(self, training_set):
+    def optimize(self, (inputs, outputs)):
         """Expects a tuple consisting of an array of input values and an array of output values.
         The weights are the optimized until the squared deviation of the neural network's output from the output
         values becomes minimal."""
-        inputs, outputs = training_set
         weights = np.hstack([w.flatten() for w in self.weights])
         results = minimize(fun=self._calc_error, x0=weights, args=(inputs, outputs), method='BFGS', options={"disp":True})
         result = results["x"]
         print "diff:", (weights - result).sum()
         self.weights = self._unflatten(result)
         return self.weights
+        
+    def save_weights(self, filename=None):
+        if not filename:
+            filename = "neural_net_" + "_".join(map(str, [ll for ll in self.layer_lengths]))
+        with open(filename, "wb") as f:
+            pickle.dump(f, self.weights)
 
 
 def test():
