@@ -141,7 +141,12 @@ class FeedForwardNetwork:
         if not filename:
             filename = "neural_net_" + "_".join(map(str, [ll for ll in self.layer_lengths]))
         with open(filename, "wb") as f:
-            pickle.dump(f, self.weights)
+            pickle.dump(self.weights, f)
+            
+    def load_weights(self, filename):
+        with open(filename, "rb") as f:
+            self.weights = pickle.load(f)
+        self.layer_lengths = [w.shape[0]-self.bias for w in self.weights]
 
 
 def test():
