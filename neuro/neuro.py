@@ -6,11 +6,13 @@ import matplotlib.pylab as plt
 import cPickle as pickle
 import ipdb
 
+
 def sigmoid(x):
     x*=-1
     np.exp(x, x)
     x+=1
     np.power(x, -1)
+
     
 def identity(x):
     return x
@@ -133,7 +135,6 @@ class FeedForwardNetwork:
         weights = np.hstack([w.flatten() for w in self.weights])
         results = minimize(fun=self._calc_error, x0=weights, args=(inputs, outputs), method=self.optimization_method, options={"disp":True})
         result = results["x"]
-        print "diff:", (weights - result).sum()
         self.weights = self._unflatten(result)
         return self.weights
         
