@@ -17,7 +17,7 @@ def identity(x):
 
 
 class FeedForwardNetwork:
-    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=identity, verbose=False, chunk_size=None):
+    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=identity, verbose=False, chunk_size=None, opt_method="BFGS"):
         """A FeedForwardNetwork object is initialized by providing a list that contains the number of nodes for
         each layer.
         For example, a FFN object with an input layer with one node, a hidden layer with 5 nodes and an output layer
@@ -34,6 +34,7 @@ class FeedForwardNetwork:
         self.layer_lengths = layer_lengths
         self.bias = bias
         self.verbose = verbose
+        self.optimization_method = opt_method
         self.chunk_size = chunk_size
         # if bias is activated, the bias weights are left out from the matrix multiplication
         if self.bias:
@@ -130,7 +131,7 @@ class FeedForwardNetwork:
         The weights are the optimized until the squared deviation of the neural network's output from the output
         values becomes minimal."""
         weights = np.hstack([w.flatten() for w in self.weights])
-        results = minimize(fun=self._calc_error, x0=weights, args=(inputs, outputs), method='BFGS', options={"disp":True})
+        results = minimize(fun=self._calc_error, x0=weights, args=(inputs, outputs), method=self.optimization_method, options={"disp":True})
         result = results["x"]
         print "diff:", (weights - result).sum()
         self.weights = self._unflatten(result)
