@@ -46,11 +46,24 @@ class FeedForwardNetwork:
         
         self.activation_fcts = [hidden_activation for layer in self.layer_lengths]
         self.activation_fcts.append(self.output_activation)
+        
+        # Initialize one-dimensional weight array. This array contains all weights of the neural network
+        # The array can be passed to the Scipy optimization routines.
+        # For matrix multiplication between layers, views on the array will be provided
+        weight_vector_length = 0
+        
+        for hl_prev, hl_next in zip(self.layer_lengths[:-1], self.layer_lengths[1:]):
+            weight_vector_length += (hl_prev+bias) * hl_next
+            
+        self.weight_vector = np.random.uniform(-1000, 1000, size=weight_vector_length)
 
         self.weights = []
+        start = 0
         for hl_prev, hl_next in zip(self.layer_lengths[:-1], self.layer_lengths[1:]):
-            hl_weight = np.random.random((hl_prev+bias, hl_next))
+            end = start + (hl_prev+bias) * hl_next
+            hl_weight = self.weight_vector[start:end].view().reshape((hl_prev+bias, hl_next))
             self.weights.append(hl_weight)
+            start = end
         
         if self.chunk_size:
             self._prop = self._forward_prop_chunked
