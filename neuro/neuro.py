@@ -99,19 +99,19 @@ class FeedForwardNetwork:
         Expects an array of the shape (No. of inputs, No. of input nodes)"""
         return self._prop(input_array, self.weights)
 
-    def _calc_error(self, weight_array, inputs, outputs):
-        if self.verbose:
-            print "error"
-        weights = self._unflatten(weight_array)
-        nn_output = self._prop(inputs, weights)
-        error = ((nn_output - outputs)**2).mean()
-        return error
+    # def _calc_error(self, weight_array, inputs, outputs):
+        # weights = self._unflatten(weight_array)
+        # nn_output = self._prop(inputs, weights)
+        # error = ((nn_output - outputs)**2).sum()
+        # return error
 
-    def calc_error(self, inputs, outputs):
+    def calc_error(self, weight_vector, inputs, outputs):
         """Returns the mean squared deviation of the neural network's output from a training set"""
-        weights = np.hstack([w.flatten() for w in self.weights])
-        return self._calc_error(weights, inputs, outputs)
-
+        self.weight_vector[:] = weight_vector
+        nn_output = self._prop(inputs, self.weights)
+        error = ((nn_output - outputs)**2).sum()
+        return error
+        
     def _unflatten(self, weight_array):
         weights = []
         start_pos = 0
@@ -125,11 +125,12 @@ class FeedForwardNetwork:
         """Expects a tuple consisting of an array of input values and an array of output values.
         The weights are the optimized until the squared deviation of the neural network's output from the output
         values becomes minimal."""
-        weights = np.hstack([w.flatten() for w in self.weights])
-        results = minimize(fun=self._calc_error, x0=weights, args=(inputs, outputs), method=self.optimization_method, options={"disp":True})
+        # weights = np.hstack([w.flatten() for w in self.weights])
+        results = minimize(fun=self.calc_error, x0=self.weight_vector, args=(inputs, outputs), method=self.optimization_method, options={"disp":True})
         result = results["x"]
-        self.weights = self._unflatten(result)
-        return self.weights
+        self.weight_vector[:] = result
+        # self.weights = self._unflatten(result)
+        # return self.weights
         
     def save_weights(self, filename=None):
         if not filename:
