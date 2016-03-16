@@ -99,7 +99,6 @@ class FeedForwardNetwork:
 
     def _forward_prop(self, input_array, weights):
         for weight, act_fct in zip(weights, self.activation_fcts):
-            # print "hidden"
             input_array = np.dot(input_array, weight[self.weight_slicer])
             if self.bias:
                 input_array += weight[-1]
@@ -127,27 +126,12 @@ class FeedForwardNetwork:
         Expects an array of the shape (No. of inputs, No. of input nodes)"""
         return self._prop(input_array, self.weights)
 
-    # def _calc_error(self, weight_array, inputs, outputs):
-        # weights = self._unflatten(weight_array)
-        # nn_output = self._prop(inputs, weights)
-        # error = ((nn_output - outputs)**2).sum()
-        # return error
-
     def calc_error(self, weight_array, inputs, outputs):
         """Returns the mean squared deviation of the neural network's output from a training set"""
         self.weight_array[:] = weight_array
         nn_output = self._prop(inputs, self.weights)
         error = ((nn_output - outputs)**2).sum()
         return error
-        
-    def _unflatten(self, weight_array):
-        weights = []
-        start_pos = 0
-        for hl_prev, hl_next in zip(self.layer_lengths[:-1], self.layer_lengths[1:]):
-            shape = hl_prev+self.bias, hl_next
-            weights.append(weight_array[start_pos:start_pos+shape[0]*shape[1]].reshape(shape))
-            start_pos += shape[0]*shape[1]
-        return weights
 
     def optimize(self, (inputs, outputs)):
         """Expects a tuple consisting of an array of input values and an array of output values.
