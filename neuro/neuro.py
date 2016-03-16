@@ -46,19 +46,19 @@ class FeedForwardNetwork:
         # Initialize one-dimensional weight array. This array contains all weights of the neural network
         # The array can be passed to the Scipy optimization routines.
         # For matrix multiplication between layers, views on the array will be provided
-        weight_vector_length = 0
+        weight_array_length = 0
         
         for hl_prev, hl_next in zip(self.layer_lengths[:-1], self.layer_lengths[1:]):
-            weight_vector_length += (hl_prev+bias) * hl_next
+            weight_array_length += (hl_prev+bias) * hl_next
             
-        self.weight_vector = np.random.uniform(weight_range[0], weight_range[1], size=weight_vector_length)
+        self.weight_array = np.random.uniform(weight_range[0], weight_range[1], size=weight_array_length)
 
         self.weights = []
         start = 0
         for hl_prev, hl_next in zip(self.layer_lengths[:-1], self.layer_lengths[1:]):
             # if bias is activated, bias weights will be added to the weight matrices
             end = start + (hl_prev+bias) * hl_next
-            hl_weight = self.weight_vector[start:end].reshape((hl_prev+bias, hl_next))
+            hl_weight = self.weight_array[start:end].reshape((hl_prev+bias, hl_next))
             self.weights.append(hl_weight)
             start = end
             
@@ -133,9 +133,9 @@ class FeedForwardNetwork:
         # error = ((nn_output - outputs)**2).sum()
         # return error
 
-    def calc_error(self, weight_vector, inputs, outputs):
+    def calc_error(self, weight_array, inputs, outputs):
         """Returns the mean squared deviation of the neural network's output from a training set"""
-        self.weight_vector[:] = weight_vector
+        self.weight_array[:] = weight_array
         nn_output = self._prop(inputs, self.weights)
         error = ((nn_output - outputs)**2).sum()
         return error
