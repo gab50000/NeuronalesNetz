@@ -70,8 +70,6 @@ class FeedForwardNetwork:
         return total
 
     def _forward_prop(self, input_array, weights):
-        if self.verbose:
-            print "forward prop"
         for weight, act_fct in zip(weights, self.activation_fcts):
             # print "hidden"
             input_array = np.dot(input_array, weight[self.weight_slicer])
@@ -81,8 +79,6 @@ class FeedForwardNetwork:
         return input_array
 
     def _forward_prop_chunked(self, input_array, weights):
-        if self.verbose:
-            print "forward prop chunked"
         for weight, act_fct in zip(weights, self.activation_fcts):
             temp_arr = np.zeros((input_array.shape[0], weight[self.weight_slicer].shape[1]), dtype=input_array.dtype)
             
