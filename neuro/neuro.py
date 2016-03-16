@@ -137,11 +137,17 @@ class FeedForwardNetwork:
             filename = "neural_net_" + "_".join(map(str, [ll for ll in self.layer_lengths]))
         with open(filename, "wb") as f:
             pickle.dump(self.weights, f)
-            
-    def load_weights(self, filename):
+    
+    @classmethod
+    def from_file(cls, filename, *args, **kwargs):
+        """Expects a filename from which to load the weights, and all args and kwargs that would be used in the __init__ method"""
+        bias = kwargs["bias"] if "bias" in kwargs else True
         with open(filename, "rb") as f:
-            self.weights = pickle.load(f)
-        self.layer_lengths = [w.shape[0]-self.bias for w in self.weights]
+            weights = pickle.load(f)
+        layer_lengths = [w.shape[0]-bias for w in weights]
+        neuro = cls(layer_lengths, **kwargs)
+        neuro.weights = weights
+        return neuro
 
 
 def test():
