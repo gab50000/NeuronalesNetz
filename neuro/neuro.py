@@ -35,6 +35,7 @@ class FeedForwardNetwork:
         self.verbose = verbose
         self.optimization_method = opt_method
         self.chunk_size = chunk_size
+        self.weight_range = weight_range
 
 
         self.hidden_activation = hidden_activation
@@ -133,16 +134,17 @@ class FeedForwardNetwork:
         error = ((nn_output - outputs)**2).sum()
         return error
 
-    def optimize(self, (inputs, outputs)):
+    def optimize(self, (inputs, outputs), attempts=100):
         """Expects a tuple consisting of an array of input values and an array of output values.
         The weights are the optimized until the squared deviation of the neural network's output from the output
         values becomes minimal."""
-        # weights = np.hstack([w.flatten() for w in self.weights])
-        results = minimize(fun=self.calc_error, x0=self.weight_vector, args=(inputs, outputs), method=self.optimization_method, options={"disp":True})
-        result = results["x"]
-        self.weight_vector[:] = result
-        # self.weights = self._unflatten(result)
-        # return self.weights
+        result_collection = []
+        for attempt in xrange(attempts):
+            self.weight_array[:] = np.random.uniform(self.weight_range[0], self.weight_range[1], self.weight_array.size)
+            results = minimize(fun=self.calc_error, x0=self.weight_array, args=(inputs, outputs), method=self.optimization_method, options={"disp":True})
+            result = results["x"]
+            result_collection.append((np.array(self.weight_array), results["fun"]))
+        self.weight_array[:] = min(result_collection, key=lambda x:x[1])[0]
         
     def save_weights(self, filename=None):
         if not filename:
