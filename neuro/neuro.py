@@ -35,11 +35,7 @@ class FeedForwardNetwork:
         self.verbose = verbose
         self.optimization_method = opt_method
         self.chunk_size = chunk_size
-        # if bias is activated, the bias weights are left out from the matrix multiplication
-        if self.bias:
-            self.weight_slicer = slice(None, -1)
-        else:
-            self.weight_slicer = slice(None, None)
+
 
         self.hidden_activation = hidden_activation
         self.output_activation = output_activation
@@ -60,10 +56,17 @@ class FeedForwardNetwork:
         self.weights = []
         start = 0
         for hl_prev, hl_next in zip(self.layer_lengths[:-1], self.layer_lengths[1:]):
+            # if bias is activated, bias weights will be added to the weight matrices
             end = start + (hl_prev+bias) * hl_next
-            hl_weight = self.weight_vector[start:end].view().reshape((hl_prev+bias, hl_next))
+            hl_weight = self.weight_vector[start:end].reshape((hl_prev+bias, hl_next))
             self.weights.append(hl_weight)
             start = end
+            
+        # the bias weights are left out from the matrix multiplication
+        if self.bias:
+            self.weight_slicer = slice(None, -1)
+        else:
+            self.weight_slicer = slice(None, None)
         
         if self.chunk_size:
             self._prop = self._forward_prop_chunked
