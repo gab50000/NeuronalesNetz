@@ -16,7 +16,7 @@ def identity(x):
 
 
 class FeedForwardNetwork:
-    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=identity, verbose=False, chunk_size=None, opt_method="BFGS"):
+    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=identity, weight_range=(0.0, 1.0), verbose=False, chunk_size=None, opt_method="BFGS"):
         """A FeedForwardNetwork object is initialized by providing a list that contains the number of nodes for
         each layer.
         For example, a FFN object with an input layer with one node, a hidden layer with 5 nodes and an output layer
@@ -55,7 +55,7 @@ class FeedForwardNetwork:
         for hl_prev, hl_next in zip(self.layer_lengths[:-1], self.layer_lengths[1:]):
             weight_vector_length += (hl_prev+bias) * hl_next
             
-        self.weight_vector = np.random.uniform(-1000, 1000, size=weight_vector_length)
+        self.weight_vector = np.random.uniform(weight_range[0], weight_range[1], size=weight_vector_length)
 
         self.weights = []
         start = 0
