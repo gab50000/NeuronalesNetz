@@ -161,20 +161,32 @@ class FeedForwardNetwork:
 def test():
     def f(x):
         return np.sin(x)*np.exp(-x**2/100)
-    nn = FeedForwardNetwork([1, 12, 1], verbose=False, chunk_size=3)
+
     inputs = np.linspace(-10, 10, 25)[:, None]
     outputs = f(inputs)
     print inputs.shape
     print outputs.shape
-    nn.optimize((inputs, outputs))
+
+    answer = raw_input("Load from file?\n")
+    if answer.lower() in ["y", "yes"]:
+        fname = raw_input("Filename?\n")
+        nn = FeedForwardNetwork.from_file(fname)
+    else:
+        nn = FeedForwardNetwork([1, 5, 1], verbose=False)    
+        nn.optimize((inputs, outputs), attempts=10)
     
     x = np.linspace(-15, 15, 100)
     y = nn.sim(x[:, None])
 
     plt.plot(x, f(x), "x")
-    plt.plot(x, y, label="bla")
+    plt.plot(inputs, f(inputs), 'ro', label="training data")
+    plt.plot(x, y, label="NN output")
     plt.legend(loc="upper left")
     plt.show()
+    
+    answer = raw_input("Save Neural Network?\n")
+    if answer.lower() in ["y", "yes"]:
+        nn.save_weights()
 
 if __name__ == "__main__":
     test()
