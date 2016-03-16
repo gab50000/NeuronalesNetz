@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # encoding:utf-8
 import numpy as np
-from scipy.optimize import minimize as minimize
+from scipy.optimize import minimize
+from scipy.optimize import basinhopping
 import matplotlib.pylab as plt
 import cPickle as pickle
 import ipdb
@@ -15,8 +16,25 @@ def identity(x):
     return x
 
 
+def basinhopping_wrapper(*args, **kwargs):
+    if "args" in kwargs:
+        args = kwargs.pop("args")
+    if "options" in kwargs:
+        options = kwargs.pop("options")
+        if "disp" in options:
+            disp = options["disp"]
+        else:
+            disp = False
+    if "fun" in kwargs:
+        func = kwargs.pop("fun")
+    if "method" in kwargs:
+        kwargs.pop("method")
+    return basinhopping(func=func, minimizer_kwargs=dict(args=args), disp=disp, **kwargs)
+
+
 class FeedForwardNetwork:
-    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=identity, weight_range=(0.0, 1.0), verbose=False, chunk_size=None, opt_method="BFGS"):
+    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=identity, weight_range=(0.0, 1.0), 
+                 verbose=False, chunk_size=None, opt_method="BFGS", filename=None):
         """A FeedForwardNetwork object is initialized by providing a list that contains the number of nodes for
         each layer.
         For example, a FFN object with an input layer with one node, a hidden layer with 5 nodes and an output layer
@@ -36,6 +54,10 @@ class FeedForwardNetwork:
         self.optimization_method = opt_method
         self.chunk_size = chunk_size
         self.weight_range = weight_range
+        if not filename:
+            self.filename = "neural_net_" + "_".join(map(str, [ll for ll in self.layer_lengths]))
+        else:
+            self.filename = filename
 
 
         self.hidden_activation = hidden_activation
@@ -139,21 +161,31 @@ class FeedForwardNetwork:
         The weights are the optimized until the squared deviation of the neural network's output from the output
         values becomes minimal."""
         result_collection = []
+        global minimize
+        if self.optimization_method == "basin":
+            minimize = basinhopping_wrapper
         for attempt in xrange(attempts):
             self.weight_array[:] = np.random.uniform(self.weight_range[0], self.weight_range[1], self.weight_array.size)
             results = minimize(fun=self.calc_error, x0=self.weight_array, args=(inputs, outputs), method=self.optimization_method, options={"disp":True})
-            result = results["x"]
-            result_collection.append((np.array(self.weight_array), results["fun"]))
+            if self.optimization_method == "basin":
+                xval = results.x
+                fval = results.fun
+            else:
+                xval = results["x"]
+                fval = results["fun"]
+            result_collection.append((xval, fval))
+            with open("{}_temp".format(self.filename), "wb") as f:
+                if self.verbose:
+                    print "writing temporary results to {}_temp".format(self.filename)
+                pickle.dump(result_collection, f)
         self.weight_array[:] = min(result_collection, key=lambda x:x[1])[0]
         
-    def save_weights(self, filename=None):
-        if not filename:
-            filename = "neural_net_" + "_".join(map(str, [ll for ll in self.layer_lengths]))
+    def save_weights(self):
         data = dict()
         data["layer_lengths"] = self.layer_lengths
         data["bias"] = self.bias
         data["weight_array"] = self.weight_array
-        with open(filename, "wb") as f:
+        with open(self.filename, "wb") as f:
             pickle.dump(data, f)
     
 
