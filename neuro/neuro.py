@@ -8,10 +8,7 @@ import ipdb
 
 
 def sigmoid(x):
-    x*=-1
-    np.exp(x, x)
-    x+=1
-    np.power(x, -1)
+    return 1./(1+np.exp(-x))
 
     
 def identity(x):
