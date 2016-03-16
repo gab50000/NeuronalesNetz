@@ -73,6 +73,18 @@ class FeedForwardNetwork:
         else:
             self._prop = self._forward_prop
             
+    @classmethod
+    def from_file(cls, filename, *args, **kwargs):
+        """Expects a filename from which to load the weights, and all args and kwargs that would be used in the __init__ method"""
+        with open(filename, "rb") as f:
+            data = pickle.load(f)
+        bias = data["bias"]
+        kwargs["bias"] = bias
+        layer_lengths = data["layer_lengths"]
+        neuro = cls(layer_lengths, **kwargs)
+        neuro.weight_array[:] = data["weight_array"]
+        return neuro
+
     def _determine_free_ram(self):
         with open("/proc/sysinfo", "r") as f:
             info = f.readlines()
@@ -151,19 +163,13 @@ class FeedForwardNetwork:
     def save_weights(self, filename=None):
         if not filename:
             filename = "neural_net_" + "_".join(map(str, [ll for ll in self.layer_lengths]))
+        data = dict()
+        data["layer_lengths"] = self.layer_lengths
+        data["bias"] = self.bias
+        data["weight_array"] = self.weight_array
         with open(filename, "wb") as f:
-            pickle.dump(self.weights, f)
+            pickle.dump(data, f)
     
-    @classmethod
-    def from_file(cls, filename, *args, **kwargs):
-        """Expects a filename from which to load the weights, and all args and kwargs that would be used in the __init__ method"""
-        bias = kwargs["bias"] if "bias" in kwargs else True
-        with open(filename, "rb") as f:
-            weights = pickle.load(f)
-        layer_lengths = [w.shape[0]-bias for w in weights]
-        neuro = cls(layer_lengths, **kwargs)
-        neuro.weights = weights
-        return neuro
 
 
 def test():
