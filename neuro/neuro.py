@@ -156,21 +156,21 @@ class FeedForwardNetwork:
         error = ((nn_output - outputs)**2).sum()
         return error
 
-    def optimize(self, (inputs, outputs), attempts=100):
+    def optimize(self, (inputs, outputs), attempts=100, basin_steps=100):
         """Expects a tuple consisting of an array of input values and an array of output values.
         The weights are the optimized until the squared deviation of the neural network's output from the output
         values becomes minimal."""
         result_collection = []
         global minimize
-        if self.optimization_method == "basin":
-            minimize = basinhopping_wrapper
+        
         for attempt in xrange(attempts):
             self.weight_array[:] = np.random.uniform(self.weight_range[0], self.weight_range[1], self.weight_array.size)
-            results = minimize(fun=self.calc_error, x0=self.weight_array, args=(inputs, outputs), method=self.optimization_method, options={"disp":True})
             if self.optimization_method == "basin":
+                results = basinhopping(func=self.calc_error, x0=self.weight_array, minimizer_kwargs=dict(args=(inputs, outputs)), disp=True, niter=basin_steps)
                 xval = results.x
                 fval = results.fun
             else:
+                results = minimize(func=self.calc_error, x0=self.weight_array, args=(inputs, outputs), method=self.optimization_method, options={"disp":True})
                 xval = results["x"]
                 fval = results["fun"]
             result_collection.append((xval, fval))
