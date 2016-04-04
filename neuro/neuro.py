@@ -158,12 +158,13 @@ class FeedForwardNetwork:
         error = ((nn_output - outputs)**2).sum()
         return error
 
-    def optimize(self, (inputs, outputs), attempts=100, basin_steps=100):
+    def optimize(self, (inputs, outputs), validation_set=None, attempts=100, basin_steps=100):
         """Expects a tuple consisting of an array of input values and an array of output values.
         The weights are the optimized until the squared deviation of the neural network's output from the output
         values becomes minimal."""
         result_collection = []
-        global minimize
+        if validation_set:
+            validation_input, validation_output = validation_set
         
         for attempt in xrange(attempts):
             self.weight_array[:] = np.random.uniform(self.weight_range[0], self.weight_range[1], 
@@ -180,11 +181,30 @@ class FeedForwardNetwork:
                                    method=self.optimization_method, options={"disp":True})
                 xval = results["x"]
                 fval = results["fun"]
+            mean_error_training_set = ((self.sim(inputs) - outputs)**2).mean()
+            print "Temporary results:"
+            print "Mean error training set:", mean_error_training_set
+            if validation_set:
+                mean_error_validation_set = ((self.sim(validation_input) - validation_output)**2).mean()
+                result_dict = dict(weights=xval, f=fval, 
+                                   training_error=mean_error_training_set, 
+                                   validation_error=mean_error_validation_set
+                                   )
+                print "Mean error validation set:", mean_error_validation_set
+            else:
+                result_dict = dict(weights=xval, f=fval, 
+                                   training_error=mean_error_training_set
+                                   )
+                
+            result_collection.append(result_dict)
             with open("{}_temp".format(self.filename), "wb") as f:
                 if self.verbose:
                     print "writing temporary results to {}_temp".format(self.filename)
                 pickle.dump(result_collection, f)
-        self.weight_array[:] = min(result_collection, key=lambda x:x[1])[0]
+        if validation_set:
+            self.weight_array[:] = min(result_collection, key=lambda x:x["validation_error"])["weights"]
+        else:
+            self.weight_array[:] = min(result_collection, key=lambda x:x["training_error"])["weights"]
         
     def save_weights(self):
         data = dict()
