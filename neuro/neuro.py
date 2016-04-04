@@ -33,8 +33,8 @@ def basinhopping_wrapper(*args, **kwargs):
 
 
 class FeedForwardNetwork:
-    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=identity, weight_range=(0.0, 1.0), 
-                 verbose=False, chunk_size=None, opt_method="BFGS", filename=None):
+    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=identity, 
+                 weight_range=(0.0, 1.0), verbose=False, chunk_size=None, opt_method="BFGS", filename=None):
         """A FeedForwardNetwork object is initialized by providing a list that contains the number of nodes for
         each layer.
         For example, a FFN object with an input layer with one node, a hidden layer with 5 nodes and an output layer
@@ -98,7 +98,8 @@ class FeedForwardNetwork:
             
     @classmethod
     def from_file(cls, filename, *args, **kwargs):
-        """Expects a filename from which to load the weights, and all args and kwargs that would be used in the __init__ method"""
+        """Expects a filename from which to load the weights, and all args and kwargs 
+        that would be used in the __init__ method"""
         with open(filename, "rb") as f:
             data = pickle.load(f)
         bias = data["bias"]
@@ -130,7 +131,8 @@ class FeedForwardNetwork:
 
     def _forward_prop_chunked(self, input_array, weights):
         for weight, act_fct in zip(weights, self.activation_fcts):
-            temp_arr = np.zeros((input_array.shape[0], weight[self.weight_slicer].shape[1]), dtype=input_array.dtype)
+            temp_arr = np.zeros((input_array.shape[0], weight[self.weight_slicer].shape[1]), 
+                                dtype=input_array.dtype)
             
             for chunk in xrange(0, temp_arr.shape[0], self.chunk_size):
                 if chunk + self.chunk_size > temp_arr.shape[0]:
@@ -164,16 +166,20 @@ class FeedForwardNetwork:
         global minimize
         
         for attempt in xrange(attempts):
-            self.weight_array[:] = np.random.uniform(self.weight_range[0], self.weight_range[1], self.weight_array.size)
+            self.weight_array[:] = np.random.uniform(self.weight_range[0], self.weight_range[1], 
+                                                     self.weight_array.size)
             if self.optimization_method == "basin":
-                results = basinhopping(func=self.calc_error, x0=self.weight_array, minimizer_kwargs=dict(args=(inputs, outputs)), disp=True, niter=basin_steps)
+                results = basinhopping(func=self.calc_error, x0=self.weight_array, 
+                                       minimizer_kwargs=dict(args=(inputs, outputs)), 
+                                       disp=True, niter=basin_steps
+                                       )
                 xval = results.x
                 fval = results.fun
             else:
-                results = minimize(func=self.calc_error, x0=self.weight_array, args=(inputs, outputs), method=self.optimization_method, options={"disp":True})
+                results = minimize(fun=self.calc_error, x0=self.weight_array, args=(inputs, outputs), 
+                                   method=self.optimization_method, options={"disp":True})
                 xval = results["x"]
                 fval = results["fun"]
-            result_collection.append((xval, fval))
             with open("{}_temp".format(self.filename), "wb") as f:
                 if self.verbose:
                     print "writing temporary results to {}_temp".format(self.filename)
