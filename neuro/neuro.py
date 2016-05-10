@@ -56,7 +56,6 @@ class FeedForwardNetwork:
         self.verbose = verbose
         self.optimization_method = opt_method
         self.chunk_size = chunk_size
-        self.weight_range = weight_range
         if not filename:
             self.filename = "neural_net_" + "_".join(map(str, [ll for ll in self.layer_lengths]))
         else:
@@ -77,7 +76,7 @@ class FeedForwardNetwork:
         for hl_prev, hl_next in zip(self.layer_lengths[:-1], self.layer_lengths[1:]):
             weight_array_length += (hl_prev+bias) * hl_next
             
-        self.weight_array = np.random.uniform(weight_range[0], weight_range[1], size=weight_array_length)
+        self.weight_array = np.empty(weight_array_length)
 
         self.weights = []
         start = 0
@@ -98,6 +97,17 @@ class FeedForwardNetwork:
             self._prop = self._forward_prop_chunked
         else:
             self._prop = self._forward_prop
+       
+        self.initialize_weights()
+        
+            
+    def initialize_weights(self):
+        for weight in self.weights:
+            shape = weight[self.weight_slicer].shape
+            weight[self.weight_slicer] = np.random.standard_normal(shape) / np.sqrt(shape[0])
+            if self.bias:
+                weight[-1] = np.random.standard_normal(shape[1])
+            
             
     @classmethod
     def from_file(cls, filename, *args, **kwargs):
@@ -186,8 +196,7 @@ class FeedForwardNetwork:
             raise NotImplementedError("Unknown error function '{}'".format(error_determination))
         
         for attempt in xrange(attempts):
-            self.weight_array[:] = np.random.uniform(self.weight_range[0], self.weight_range[1], 
-                                                     self.weight_array.size)
+            self.initialize_weights()
             if self.optimization_method == "basin":
                 results = basinhopping(func=self.calc_error, x0=self.weight_array, 
                                        minimizer_kwargs=dict(args=(inputs, outputs)), 
