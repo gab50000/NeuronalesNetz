@@ -100,6 +100,8 @@ class FeedForwardNetwork:
        
         self.initialize_weights()
         
+        if verbose:
+            self.print_settings()
             
     def initialize_weights(self):
         for weight in self.weights:
@@ -108,6 +110,12 @@ class FeedForwardNetwork:
             if self.bias:
                 weight[-1] = np.random.standard_normal(shape[1])
             
+            
+    def print_settings(self):
+        print "Layers:", self.layer_lengths 
+        print "Bias:", self.bias 
+        print "Lambda:", self.regularization_parameter 
+        print "Optimization method:", self.optimization_method 
             
     @classmethod
     def from_file(cls, filename, *args, **kwargs):
