@@ -33,8 +33,10 @@ def basinhopping_wrapper(*args, **kwargs):
 
 
 class FeedForwardNetwork:
-    def __init__(self, layer_lengths, bias=True, hidden_activation=np.tanh, output_activation=identity, 
-                 weight_range=(0.0, 1.0), verbose=False, chunk_size=None, opt_method="BFGS", filename=None):
+    def __init__(self, layer_lengths, bias=True, hidden_activation=sigmoid, 
+                 output_activation=identity, opt_method="BFGS", 
+                 regularization_parameter=0, verbose=False, 
+                 chunk_size=None, filename=None):
         """A FeedForwardNetwork object is initialized by providing a list that contains the number of nodes for
         each layer.
         For example, a FFN object with an input layer with one node, a hidden layer with 5 nodes and an output layer
@@ -50,6 +52,7 @@ class FeedForwardNetwork:
           """
         self.layer_lengths = layer_lengths
         self.bias = bias
+        self.regularization_parameter = float(regularization_parameter)
         self.verbose = verbose
         self.optimization_method = opt_method
         self.chunk_size = chunk_size
@@ -155,14 +158,16 @@ class FeedForwardNetwork:
         """Returns the mean squared deviation of the neural network's output from a training set"""
         self.weight_array[:] = weight_array
         nn_output = self._prop(inputs, self.weights)
-        error = ((nn_output - outputs)**2).sum()
+        error = ((nn_output - outputs)**2).sum() / (2*outputs.shape[0]) \
+                + self.regularization_parameter / (2*outputs.shape[0]) * (weight_array**2).sum()
         return error
         
     def cross_entropy(self, weight_array, inputs, outputs):
         """Returns the cross entropy of the neural network's output from a training set"""
         self.weight_array[:] = weight_array
         nn_output = self._prop(inputs, self.weights)
-        error = -(outputs * np.log(nn_output) + (1-outputs) * np.log(1-nn_output)).sum()
+        error = -(outputs * np.log(nn_output) + (1-outputs) * np.log(1-nn_output)).sum() \
+                + self.regularization_parameter / (2*outputs.shape[0]) * (weight_array**2).sum()
         return error
 
     def optimize(self, (inputs, outputs), validation_set=None, attempts=100, basin_steps=100, error_determination="squared_sum"):
@@ -244,8 +249,8 @@ def test_1D():
         fname = raw_input("Filename?\n")
         nn = FeedForwardNetwork.from_file(fname)
     else:
-        nn = FeedForwardNetwork([1, 5, 1], verbose=False)    
-        nn.optimize((inputs, outputs), attempts=10)
+        nn = FeedForwardNetwork([1, 5, 1], hidden_activation=np.tanh, regularization_parameter=0.001, verbose=True)    
+        nn.optimize((inputs, outputs), attempts=1, error_determination="cross_entropy")
     
     x = np.linspace(-15, 15, 100)
     y = nn.sim(x[:, None])
@@ -261,4 +266,4 @@ def test_1D():
         nn.save_weights()
 
 if __name__ == "__main__":
-    test()
+    test_1D()
