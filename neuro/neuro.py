@@ -157,14 +157,28 @@ class FeedForwardNetwork:
         nn_output = self._prop(inputs, self.weights)
         error = ((nn_output - outputs)**2).sum()
         return error
+        
+    def cross_entropy(self, weight_array, inputs, outputs):
+        """Returns the cross entropy of the neural network's output from a training set"""
+        self.weight_array[:] = weight_array
+        nn_output = self._prop(inputs, self.weights)
+        error = -(outputs * np.log(nn_output) + (1-outputs) * np.log(1-nn_output)).sum()
+        return error
 
-    def optimize(self, (inputs, outputs), validation_set=None, attempts=100, basin_steps=100):
+    def optimize(self, (inputs, outputs), validation_set=None, attempts=100, basin_steps=100, error_determination="squared_sum"):
         """Expects a tuple consisting of an array of input values and an array of output values.
         The weights are the optimized until the squared deviation of the neural network's output from the output
         values becomes minimal."""
         result_collection = []
         if validation_set:
             validation_input, validation_output = validation_set
+            
+        if error_determination == "squared_sum":
+            error_func = self.calc_error
+        elif error_determination == "cross_entropy":
+            error_func = self.cross_entropy
+        else:
+            raise NotImplementedError("Unknown error function '{}'".format(error_determination))
         
         for attempt in xrange(attempts):
             self.weight_array[:] = np.random.uniform(self.weight_range[0], self.weight_range[1], 
@@ -213,10 +227,10 @@ class FeedForwardNetwork:
         data["weight_array"] = self.weight_array
         with open(self.filename, "wb") as f:
             pickle.dump(data, f)
-    
+            
 
 
-def test():
+def test_1D():
     def f(x):
         return np.sin(x)*np.exp(-x**2/100)
 
