@@ -256,7 +256,7 @@ def test_1D():
     def f(x):
         return np.sin(x)*np.exp(-x**2/100)
 
-    inputs = np.linspace(-10, 10, 25)[:, None]
+    inputs = np.random.uniform(-10, 10, size=(25, 1))
     outputs = f(inputs)
     print inputs.shape
     print outputs.shape
