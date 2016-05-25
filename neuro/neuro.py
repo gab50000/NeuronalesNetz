@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # encoding:utf-8
+import argparse
 import numpy as np
 from scipy.optimize import minimize
 from scipy.optimize import basinhopping
@@ -281,6 +282,47 @@ def test_1D():
     answer = raw_input("Save Neural Network?\n")
     if answer.lower() in ["y", "yes"]:
         nn.save_weights()
+        
+def test_2D():
+    def f(x, y):
+        return np.exp(-(x**2 + y**2)/100)
+        
+    x, y = np.linspace(-10, 10, 25), np.linspace(-10, 10, 25)
+    
+    xg, yg = np.meshgrid(x, y, indexing="ij")
+    zg = f(xg, yg)
+    
+    inputs = np.vstack([xg.flatten(), yg.flatten()]).T
+    outputs = zg.flatten()[:, None]
+    
+    selection = np.asarray(np.random.randint(2, size=inputs.shape[0]), dtype=bool)
+    inputs = inputs[selection, :]
+    outputs = outputs[selection, :]
+    
+    nn = FeedForwardNetwork([1, 5, 1], verbose=False)
+    nn.optimize((inputs, outputs), attempts=10)
+    nn_output = nn.sim(inputs)
+    
+    ipdb.set_trace()
+    
+    plt.imshow(zg, extent=(xg.min(), xg.max(), yg.min(), yg.max()))
+    plt.show()
+    
+    plt.imshow(nn_output, extent=(xg.min(), xg.max(), yg.min(), yg.max()))
+    plt.show()
+    
+    
+    
 
 if __name__ == "__main__":
-    test_1D()
+    default_help = argparse.ArgumentDefaultsHelpFormatter
+    parser=argparse.ArgumentParser(description="Neural Network Trainingset Creator", 
+                                   formatter_class=default_help
+                                   )
+    parser.add_argument("--test", default="1d", choices=["1d", "2d"], help="Choose test")
+    args = parser.parse_args()
+    
+    if args.test == "1d":
+        test_1D()
+    else:
+        test_2D()
