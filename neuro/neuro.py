@@ -302,7 +302,7 @@ def test_2D():
     inputs = np.random.uniform(-10, 10, size=(100, 2))
     outputs = f(inputs[:, 0], inputs[:, 1], sigma_x, sigma_y)[:, None]
     
-    nn = FeedForwardNetwork([2, 5, 1], regularization_parameter=0.0001, verbose=False)
+    nn = FeedForwardNetwork([2, 5, 1], regularization_parameter=0.0001, hidden_activation=np.tanh, verbose=False)
     nn.optimize((inputs, outputs), attempts=10, error_determination="cross_entropy")
     
     nn_input = np.vstack([xg.flatten(), yg.flatten()]).T
@@ -310,7 +310,6 @@ def test_2D():
     
     fig, ((ax00, ax01, ax02), (ax10, ax11, ax12)) = plt.subplots(2, 3)
     
-    # ipdb.set_trace()
     ax00.imshow(zg, extent=(xg.min(), xg.max(), yg.min(), yg.max()))
     ax00.scatter(inputs[:, 0], inputs[:, 1])
     ax00.set_title("Target")
