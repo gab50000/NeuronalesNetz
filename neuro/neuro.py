@@ -287,34 +287,54 @@ def test_1D():
         nn.save_weights()
         
 def test_2D():
-    def f(x, y):
-        return np.exp(-(x**2 + y**2)/100)
+    def f(x, y, sigma_x=10, sigma_y=10):
+        return np.exp(-x**2/sigma_x**2) * np.exp(-y**2/sigma_y**2)
+        
+    np.random.seed(0)
+        
+    sigma_x, sigma_y = 50, 10
         
     x, y = np.linspace(-10, 10, 25), np.linspace(-10, 10, 25)
     
-    xg, yg = np.meshgrid(x, y, indexing="ij")
-    zg = f(xg, yg)
+    xg, yg = np.meshgrid(x, y, indexing="xy")
+    zg = f(xg, yg, sigma_x, sigma_y)
     
-    inputs = np.vstack([xg.flatten(), yg.flatten()]).T
-    outputs = zg.flatten()[:, None]
+    inputs = np.random.uniform(-10, 10, size=(100, 2))
+    outputs = f(inputs[:, 0], inputs[:, 1], sigma_x, sigma_y)[:, None]
     
-    selection = np.asarray(np.random.randint(2, size=inputs.shape[0]), dtype=bool)
-    inputs = inputs[selection, :]
-    outputs = outputs[selection, :]
+    nn = FeedForwardNetwork([2, 5, 1], regularization_parameter=0.0001, verbose=False)
+    nn.optimize((inputs, outputs), attempts=10, error_determination="cross_entropy")
     
-    nn = FeedForwardNetwork([1, 5, 1], verbose=False)
-    nn.optimize((inputs, outputs), attempts=10)
-    nn_output = nn.sim(inputs)
+    nn_input = np.vstack([xg.flatten(), yg.flatten()]).T
+    nn_output = nn.sim(nn_input)
     
-    ipdb.set_trace()
+    fig, ((ax00, ax01, ax02), (ax10, ax11, ax12)) = plt.subplots(2, 3)
     
-    plt.imshow(zg, extent=(xg.min(), xg.max(), yg.min(), yg.max()))
+    # ipdb.set_trace()
+    ax00.imshow(zg, extent=(xg.min(), xg.max(), yg.min(), yg.max()))
+    ax00.scatter(inputs[:, 0], inputs[:, 1])
+    ax00.set_title("Target")
+   
+    ax01.tricontourf(nn_input[:, 0], nn_input[:, 1], nn_output[:, 0])
+    ax01.set_title("Neural network output")
+    
+    tri = ax02.tricontourf(nn_input[:, 0], nn_input[:, 1], np.abs(nn_output.flatten()-zg.flatten())/zg.flatten())
+    ax02.set_title("Relative error")
+    fig.colorbar(tri, ax=ax02)
+    
+    x2 = np.zeros(50)
+    y2 = np.linspace(-10, 10, 50)
+    z_nn = nn.sim(np.vstack([x2, y2]).T).flatten()
+    ax10.plot(y2, f(x2, y2, sigma_x, sigma_y), "g-", y2, z_nn, "r-")
+    ax10.text(0.1, 0.9, "x = 0", transform=ax10.transAxes)
+
+    x3 = np.linspace(-10, 10, 50)
+    y3 = np.zeros(50)
+    z2_nn = nn.sim(np.vstack([x3, y3]).T).flatten()
+    ax11.plot(x3, f(x3, y3, sigma_x, sigma_y), "g-", x3, z2_nn, "r-")
+    ax11.text(0.1, 0.9, "y = 0", transform=ax11.transAxes)
+
     plt.show()
-    
-    plt.imshow(nn_output, extent=(xg.min(), xg.max(), yg.min(), yg.max()))
-    plt.show()
-    
-    
     
 
 if __name__ == "__main__":
