@@ -204,6 +204,9 @@ class FeedForwardNetwork:
         else:
             raise NotImplementedError("Unknown error function '{}'".format(error_determination))
         
+        if inputs.shape[-1] != self.layer_lengths[0]:
+            raise TypeError("Shape of input array ({}) does not match number of input layers ({})".format(inputs.shape[-1], self.layer_lengths[0]))
+        
         for attempt in xrange(attempts):
             self.initialize_weights()
             if self.optimization_method == "basin":
