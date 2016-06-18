@@ -35,9 +35,8 @@ def basinhopping_wrapper(*args, **kwargs):
 
 class FeedForwardNetwork:
     def __init__(self, layer_lengths, bias=True, hidden_activation=sigmoid, 
-                 output_activation=identity, opt_method="BFGS", 
-                 regularization_parameter=0, verbose=False, 
-                 chunk_size=None, filename=None):
+                 output_activation=identity, regularization_parameter=0, 
+                 chunk_size=None, filename=None, verbose=False):
         """A FeedForwardNetwork object is initialized by providing a list that contains the number of nodes for
         each layer.
         For example, a FFN object with an input layer with one node, a hidden layer with 5 nodes and an output layer
@@ -55,7 +54,6 @@ class FeedForwardNetwork:
         self.bias = bias
         self.regularization_parameter = float(regularization_parameter)
         self.verbose = verbose
-        self.optimization_method = opt_method
         self.chunk_size = chunk_size
         if not filename:
             self.filename = "neural_net_" + "_".join(map(str, [ll for ll in self.layer_lengths]))
@@ -116,7 +114,6 @@ class FeedForwardNetwork:
         print "Layers:", self.layer_lengths 
         print "Bias:", self.bias 
         print "Lambda:", self.regularization_parameter 
-        print "Optimization method:", self.optimization_method 
             
     @classmethod
     def from_file(cls, filename, *args, **kwargs):
@@ -189,7 +186,8 @@ class FeedForwardNetwork:
                 + self.regularization_parameter / (2*outputs.shape[0]) * (weight_array**2).sum()
         return error
 
-    def optimize(self, (inputs, outputs), validation_set=None, attempts=100, basin_steps=100, error_determination="squared_sum"):
+    def optimize(self, (inputs, outputs), validation_set=None, attempts=100, 
+                 basin_steps=100, optimization_method="BFGS", error_determination="squared_sum"):
         """Expects a tuple consisting of an array of input values and an array of output values.
         The weights are the optimized until the squared deviation of the neural network's output from the output
         values becomes minimal."""
@@ -209,7 +207,7 @@ class FeedForwardNetwork:
         
         for attempt in xrange(attempts):
             self.initialize_weights()
-            if self.optimization_method == "basin":
+            if optimization_method == "basin":
                 results = basinhopping(func=self.calc_error, x0=self.weight_array, 
                                        minimizer_kwargs=dict(args=(inputs, outputs)), 
                                        disp=True, niter=basin_steps
@@ -218,7 +216,7 @@ class FeedForwardNetwork:
                 fval = results.fun
             else:
                 results = minimize(fun=self.calc_error, x0=self.weight_array, args=(inputs, outputs), 
-                                   method=self.optimization_method, options={"disp":True})
+                                   method=optimization_method, options={"disp":True})
                 xval = results["x"]
                 fval = results["fun"]
             mean_error_training_set = ((self.sim(inputs) - outputs)**2).mean()
@@ -303,7 +301,7 @@ def test_2D():
     outputs = f(inputs[:, 0], inputs[:, 1], sigma_x, sigma_y)[:, None]
     
     nn = FeedForwardNetwork([2, 5, 1], regularization_parameter=0.0001, hidden_activation=np.tanh, verbose=False)
-    nn.optimize((inputs, outputs), attempts=10, error_determination="cross_entropy")
+    nn.optimize((inputs, outputs), attempts=10, optimization_method="baisin", error_determination="cross_entropy")
     
     nn_input = np.vstack([xg.flatten(), yg.flatten()]).T
     nn_output = nn.sim(nn_input)
