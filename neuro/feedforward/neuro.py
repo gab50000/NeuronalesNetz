@@ -261,6 +261,16 @@ class FeedForwardNetwork:
         data["layer_lengths"] = self.layer_lengths
         data["bias"] = self.bias
         data["weight_array"] = self.weight_array
+        
+        if os.path.exists(self.filename):
+            i = 1
+            fn, ext = os.path.splitext(self.filename)
+            while os.path.exists(self.filename):
+                print "File", self.filename, "already exists"
+                self.filename = "{}({:02d}){}".format(fn, i, ext)
+                i += 1
+        
+        print "Saving weights as", self.filename
         with open(self.filename, "wb") as f:
             pickle.dump(data, f)
             
