@@ -218,33 +218,33 @@ class FeedForwardNetwork:
             raise TypeError("Shape of input array ({}) does not match number of input layers ({})".format(inputs.shape[-1], self.layer_lengths[0]))
         
         for attempt in xrange(attempts):
+            if self.verbose:
+                print "Optimization", attempt
             self.initialize_weights()
             if optimization_method == "basin":
-                results = basinhopping(func=self.calc_error, x0=self.weight_array, 
+                results = basinhopping(func=error_func, x0=self.weight_array, 
                                        minimizer_kwargs=dict(args=(inputs, outputs)), 
-                                       disp=True, niter=basin_steps
+                                       disp=self.verbose, niter=basin_steps
                                        )
                 xval = results.x
                 fval = results.fun
             else:
-                results = minimize(fun=self.calc_error, x0=self.weight_array, args=(inputs, outputs), 
+                results = minimize(fun=error_func, x0=self.weight_array, args=(inputs, outputs), 
                                    method=optimization_method, options={"disp":True})
                 xval = results["x"]
                 fval = results["fun"]
-            mean_error_training_set = ((self.sim(inputs) - outputs)**2).mean()
-            print "Temporary results:"
-            print "Mean error training set:", mean_error_training_set
+                
+                if self.verbose:
+                    print results
+
             if validation_set:
-                mean_error_validation_set = ((self.sim(validation_input) - validation_output)**2).mean()
+                mean_error_validation_set = error_func(self.weight_array, validation_input, validation_output) #((self.sim(validation_input) - validation_output)**2).mean()
                 result_dict = dict(weights=xval, f=fval, 
-                                   training_error=mean_error_training_set, 
                                    validation_error=mean_error_validation_set
                                    )
                 print "Mean error validation set:", mean_error_validation_set
             else:
-                result_dict = dict(weights=xval, f=fval, 
-                                   training_error=mean_error_training_set
-                                   )
+                result_dict = dict(weights=xval, f=fval)
                 
             result_collection.append(result_dict)
             with open("{}_temp".format(self.filename), "wb") as f:
@@ -254,7 +254,7 @@ class FeedForwardNetwork:
         if validation_set:
             self.weight_array[:] = min(result_collection, key=lambda x:x["validation_error"])["weights"]
         else:
-            self.weight_array[:] = min(result_collection, key=lambda x:x["training_error"])["weights"]
+            self.weight_array[:] = min(result_collection, key=lambda x:x["f"])["weights"]
         
     def save_weights(self):
         data = dict()
