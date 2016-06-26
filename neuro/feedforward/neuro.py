@@ -185,6 +185,16 @@ class FeedForwardNetwork:
         error = -(outputs * np.log(nn_output) + (1-outputs) * np.log(1-nn_output)).sum() \
                 + self.regularization_parameter / (2*outputs.shape[0]) * (weight_array**2).sum()
         return error
+        
+    def calc_weighted_error(self, weight_array, inputs, outputs):
+        """Returns the mean squared deviation of the neural network's output from a training set.
+           Weights the deviation of each data point.
+           Needs output values in outputs[0] and weights in outputs[1]"""
+        self.weight_array[:] = weight_array
+        nn_output = self._prop(inputs, self.weights)
+        error = (outputs[1] * (nn_output - outputs[0])**2).sum() / (2*outputs.shape[1]) \
+                + self.regularization_parameter / (2*outputs.shape[1]) * (weight_array**2).sum()
+        return error
 
     def optimize(self, (inputs, outputs), validation_set=None, attempts=100, 
                  basin_steps=100, optimization_method="BFGS", error_determination="squared_sum"):
@@ -199,6 +209,8 @@ class FeedForwardNetwork:
             error_func = self.calc_error
         elif error_determination == "cross_entropy":
             error_func = self.cross_entropy
+        elif error_determination == "weighted_error":
+            error_func = self.calc_weighted_error
         else:
             raise NotImplementedError("Unknown error function '{}'".format(error_determination))
         
