@@ -1,0 +1,14 @@
+[build-system]
+requires = ["flit"]
+build-backend = "flit.buildapi"
+
+[tool.flit.metadata]
+module = "neuro"
+author = "Gabriel Kabbe"
+author-email = "gabriel.kabbe@mail.de"
+home-page = "https://www.github.com/gab50000/NeuronalesNetz"
+classifiers = ["License :: OSI Approved :: MIT License"]
+
+
+[tool.flit.scripts]
+test_gru = "neuro.gru.gru:test"
