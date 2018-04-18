@@ -6,6 +6,7 @@ from torch.autograd import Variable
 
 
 class FeedForward(torch.nn.Module):
+    """Implementation of a "low-level" neural net."""
     def __init__(self, in_size, hidden_size, out_size):
         super().__init__()
         self.W1 = Variable(torch.randn(in_size, hidden_size).type(torch.FloatTensor), requires_grad=True)
@@ -60,6 +61,7 @@ def get_data():
     return x_t, y_t
 
 def ff_test():
+    """Use the "low-level" neural net"""
     x_t, y_t = get_data()
 
     ff = FeedForward(50, 20, 50)
