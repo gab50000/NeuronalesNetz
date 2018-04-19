@@ -45,22 +45,22 @@ def get_sine():
 
 def learn_sine():
     in_size = 1
-    hidden_size = 100
+    hidden_size = 1000
     out_size = 1
 
     rnn = RNN(in_size, hidden_size, out_size)
-    hidden = Variable(torch.zeros(hidden_size))
     criterion = torch.nn.MSELoss(size_average=False)
-    optimizer = torch.optim.SGD(rnn.parameters(), lr=1e-5)
+    optimizer = torch.optim.SGD(rnn.parameters(), lr=1e-4)
 
-    for i in range(100):
-        print("Step", i, end="; ", flush=True)
+    for i in range(1000):
+        hidden = Variable(torch.zeros(hidden_size))
+        #print("Step", i, end="; ", flush=True)
         xs, ys = get_sine()
         loss = 0
         for x, y_target in zip(xs, ys):
             y_pred, hidden = rnn(x, hidden)
             loss += criterion(y_pred, y_target)
-        print("Loss =", loss.data[0])
+        print(loss.data[0], flush=True)
         optimizer.zero_grad()
         loss.backward(retain_graph=(i<99))
         optimizer.step()
